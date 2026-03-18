@@ -266,8 +266,8 @@ app.delete('/api/account', apiLimiter, csrfGuard, requireAuth, (req, res) => {
 
 // ── Start server ─────────────────────────────────────────────────────────────
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Personal File Uploader running at http://localhost:${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Personal File Uploader running at http://0.0.0.0:${PORT}`);
   });
 }
 
