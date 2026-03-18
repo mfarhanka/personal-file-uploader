@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal File Uploader</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #7dd3fc;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 32px;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 28px;
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 18px;
+      color: #cbd5e1;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 10px 20px;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    button:disabled { opacity: 0.5; cursor: default; }
+    button:not(:disabled):hover { opacity: 0.85; }
+
+    .btn-primary   { background: #3b82f6; color: #fff; }
+    .btn-success   { background: #22c55e; color: #fff; }
+    .btn-danger    { background: #ef4444; color: #fff; }
+    .btn-secondary { background: #475569; color: #e2e8f0; }
+    .btn-sm        { padding: 6px 12px; font-size: 0.82rem; }
+
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      outline: none;
+    }
+    input:focus { border-color: #3b82f6; }
+
+    .pin-display {
+      background: #0f172a;
+      border: 1px solid #22c55e;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .pin-display .pin-value {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+      color: #4ade80;
+    }
+    .pin-display .pin-label {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    .alert {
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+    }
+    .alert-error   { background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; }
+    .alert-success { background: #052e16; border: 1px solid #22c55e; color: #86efac; }
+    .alert-info    { background: #0c1a2e; border: 1px solid #3b82f6; color: #93c5fd; }
+
+    /* File list */
+    .file-list { list-style: none; }
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: #0f172a;
+      gap: 8px;
+    }
+    .file-info { flex: 1; overflow: hidden; }
+    .file-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .file-meta { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+    .file-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed #334155;
+      border-radius: 10px;
+      padding: 32px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      margin-bottom: 14px;
+      color: #64748b;
+    }
+    .drop-zone.hover {
+      border-color: #3b82f6;
+      background: #1e3a5f22;
+      color: #93c5fd;
+    }
+    .drop-zone svg { width: 36px; height: 36px; margin-bottom: 8px; }
+    .drop-zone p { font-size: 0.9rem; }
+    .drop-zone small { font-size: 0.75rem; }
+
+    #fileInput { display: none; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .section-header h2 { margin-bottom: 0; }
+
+    .badge {
+      background: #334155;
+      color: #94a3b8;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #64748b;
+      padding: 24px 0;
+      font-size: 0.9rem;
+    }
+
+    #dashboardView { width: 100%; max-width: 600px; }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 24px;
+    }
+
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { font-size: 1.6rem; }
+
+    .progress-bar-wrap {
+      background: #0f172a;
+      border-radius: 999px;
+      height: 6px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: #3b82f6;
+      border-radius: 999px;
+      transition: width 0.2s;
+      width: 0%;
+    }
+
+    .hidden { display: none !important; }
+
+    .tab-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .tab-btn.active {
+      background: #1d4ed8;
+      border-color: #3b82f6;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Landing view ── -->
+<div id="landingView">
+  <div style="text-align:center; margin-bottom:32px; margin-top: 40px;">
+    <div style="font-size:3rem; margin-bottom:8px;">📁</div>
+    <h1>Personal File Uploader</h1>
+    <p class="subtitle">Upload files anonymously. Access them anytime with your PIN.</p>
+  </div>
+
+  <div class="card" id="authCard">
+    <div class="tab-row">
+      <button class="tab-btn active" id="tabCreate" onclick="showTab('create')">Create Account</button>
+      <button class="tab-btn" id="tabLogin" onclick="showTab('login')">Login with PIN</button>
+    </div>
+
+    <!-- Create tab -->
+    <div id="createTab">
+      <p style="color:#94a3b8; font-size:0.88rem; margin-bottom:16px;">
+        Create an anonymous account instantly — no email or password needed.
+        You'll receive a PIN to access your files later.
+      </p>
+      <div id="createMsg"></div>
+      <button class="btn-primary" style="width:100%" onclick="createAccount()">Create Anonymous Account</button>
+    </div>
+
+    <!-- Login tab -->
+    <div id="loginTab" class="hidden">
+      <p style="color:#94a3b8; font-size:0.88rem; margin-bottom:16px;">
+        Enter your 6-digit PIN to access your files.
+      </p>
+      <div id="loginMsg"></div>
+      <input type="text" id="pinInput" inputmode="numeric" pattern="[0-9]{6}"
+             placeholder="Enter your 6-digit PIN" maxlength="6"
+             onkeydown="if(event.key==='Enter') loginWithPin()"
+             oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)" />
+      <button class="btn-primary" style="width:100%" onclick="loginWithPin()">Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Dashboard view ── -->
+<div id="dashboardView" class="hidden">
+  <div class="header-row">
+    <div class="logo">
+      <span class="logo-icon">📁</span>
+      <span style="font-weight:700; color:#7dd3fc; font-size:1.1rem;">File Uploader</span>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-danger btn-sm" onclick="confirmDeleteAccount()">Delete Account</button>
+      <button class="btn-secondary btn-sm" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Upload card -->
+  <div class="card" style="max-width:600px;">
+    <h2>Upload Files</h2>
+    <div id="uploadMsg"></div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()"
+         ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+      </svg>
+      <p>Drag & drop files here, or <strong>click to browse</strong></p>
+      <small>Up to 50 MB per file · up to 20 files at once</small>
+    </div>
+    <input type="file" id="fileInput" multiple onchange="uploadFiles(this.files)" />
+    <div class="progress-bar-wrap hidden" id="progressWrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+  </div>
+
+  <!-- Files card -->
+  <div class="card" style="max-width:600px;">
+    <div class="section-header">
+      <h2>Your Files</h2>
+      <span class="badge" id="fileCount">0</span>
+    </div>
+    <div id="fileListMsg"></div>
+    <ul class="file-list" id="fileList"></ul>
+    <div class="empty-state hidden" id="emptyState">No files uploaded yet.</div>
+  </div>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let currentAccountId = null;
+  let csrfToken = null;
+
+  // ── CSRF token ─────────────────────────────────────────────────────────────
+  async function fetchCsrfToken() {
+    try {
+      const res = await fetch('/api/csrf-token');
+      if (res.ok) {
+        const data = await res.json();
+        csrfToken = data.csrfToken;
+      }
+    } catch (_) {}
+  }
+
+  function csrfHeaders(extra) {
+    return Object.assign({ 'X-CSRF-Token': csrfToken || '' }, extra || {});
+  }
+
+  // ── Tab toggle ─────────────────────────────────────────────────────────────
+  function showTab(tab) {
+    document.getElementById('createTab').classList.toggle('hidden', tab !== 'create');
+    document.getElementById('loginTab').classList.toggle('hidden', tab !== 'login');
+    document.getElementById('tabCreate').classList.toggle('active', tab === 'create');
+    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function showMsg(elemId, msg, type = 'error') {
+    const el = document.getElementById(elemId);
+    el.innerHTML = `<div class="alert alert-${type}">${escapeHtml(msg)}</div>`;
+  }
+  function clearMsg(elemId) { document.getElementById(elemId).innerHTML = ''; }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+              .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1048576).toFixed(1) + ' MB';
+  }
+
+  function formatDate(ts) {
+    return new Date(ts).toLocaleString();
+  }
+
+  // ── Account ─────────────────────────────────────────────────────────────────
+  async function createAccount() {
+    clearMsg('createMsg');
+    try {
+      const res = await fetch('/api/account/create', {
+        method: 'POST',
+        headers: csrfHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) return showMsg('createMsg', data.error || 'Error creating account');
+      currentAccountId = data.accountId;
+
+      // Show PIN in a modal-like card
+      document.getElementById('authCard').innerHTML = `
+        <h2 style="margin-bottom:12px; color:#4ade80;">✅ Account Created!</h2>
+        <p style="color:#94a3b8; font-size:0.88rem; margin-bottom:16px;">
+          Save this PIN — it's the only way to access your files later.
+        </p>
+        <div class="pin-display">
+          <div class="pin-value">${escapeHtml(data.pin)}</div>
+          <div class="pin-label">Your 6-digit access PIN</div>
+        </div>
+        <button class="btn-success" style="width:100%" onclick="enterDashboard()">
+          Continue to Dashboard →
+        </button>
+      `;
+    } catch (e) {
+      showMsg('createMsg', 'Network error. Please try again.');
+    }
+  }
+
+  async function loginWithPin() {
+    clearMsg('loginMsg');
+    const pin = document.getElementById('pinInput').value.trim();
+    if (!pin) return showMsg('loginMsg', 'Please enter your PIN.');
+    if (!/^\d{6}$/.test(pin)) return showMsg('loginMsg', 'PIN must be exactly 6 digits.');
+    try {
+      const res = await fetch('/api/account/login', {
+        method: 'POST',
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ pin }),
+      });
+      const data = await res.json();
+      if (!res.ok) return showMsg('loginMsg', data.error || 'Invalid PIN');
+      currentAccountId = data.accountId;
+      enterDashboard();
+    } catch (e) {
+      showMsg('loginMsg', 'Network error. Please try again.');
+    }
+  }
+
+  async function logout() {
+    await fetch('/api/account/logout', {
+      method: 'POST',
+      headers: csrfHeaders(),
+    });
+    currentAccountId = null;
+    location.reload();
+  }
+
+  async function confirmDeleteAccount() {
+    if (!confirm('Delete your account and ALL uploaded files? This cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/account', {
+        method: 'DELETE',
+        headers: csrfHeaders(),
+      });
+      if (res.ok) {
+        alert('Account deleted successfully.');
+        location.reload();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete account.');
+      }
+    } catch (e) {
+      alert('Network error.');
+    }
+  }
+
+  // ── Dashboard ───────────────────────────────────────────────────────────────
+  function enterDashboard() {
+    document.getElementById('landingView').classList.add('hidden');
+    document.getElementById('dashboardView').classList.remove('hidden');
+    loadFiles();
+  }
+
+  async function loadFiles() {
+    clearMsg('fileListMsg');
+    try {
+      const res = await fetch('/api/files');
+      if (res.status === 401) { logout(); return; }
+      const files = await res.json();
+      renderFileList(files);
+    } catch (e) {
+      showMsg('fileListMsg', 'Failed to load files.', 'error');
+    }
+  }
+
+  function renderFileList(files) {
+    const list = document.getElementById('fileList');
+    const empty = document.getElementById('emptyState');
+    document.getElementById('fileCount').textContent = files.length;
+    list.innerHTML = '';
+    if (files.length === 0) { empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    for (const f of files) {
+      const li = document.createElement('li');
+      li.className = 'file-item';
+      li.innerHTML = `
+        <div class="file-info">
+          <div class="file-name" title="${escapeHtml(f.original_name)}">${escapeHtml(f.original_name)}</div>
+          <div class="file-meta">${formatSize(f.size)} · ${formatDate(f.uploaded_at)}</div>
+        </div>
+        <div class="file-actions">
+          <button class="btn-primary btn-sm" onclick="downloadFile('${escapeHtml(f.id)}')">Download</button>
+          <button class="btn-danger btn-sm" onclick="deleteFile('${escapeHtml(f.id)}', this)">Delete</button>
+        </div>
+      `;
+      list.appendChild(li);
+    }
+  }
+
+  // ── File upload ─────────────────────────────────────────────────────────────
+  function onDragOver(e) {
+    e.preventDefault();
+    document.getElementById('dropZone').classList.add('hover');
+  }
+  function onDragLeave(e) {
+    document.getElementById('dropZone').classList.remove('hover');
+  }
+  function onDrop(e) {
+    e.preventDefault();
+    document.getElementById('dropZone').classList.remove('hover');
+    uploadFiles(e.dataTransfer.files);
+  }
+
+  async function uploadFiles(fileList) {
+    if (!fileList || fileList.length === 0) return;
+    clearMsg('uploadMsg');
+    const formData = new FormData();
+    for (const f of fileList) formData.append('files', f);
+
+    const progressWrap = document.getElementById('progressWrap');
+    const progressBar  = document.getElementById('progressBar');
+    progressWrap.classList.remove('hidden');
+    progressBar.style.width = '10%';
+
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/files/upload');
+      xhr.setRequestHeader('X-CSRF-Token', csrfToken || '');
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          progressBar.style.width = Math.round((e.loaded / e.total) * 90) + '%';
+        }
+      };
+      xhr.onload = () => {
+        progressBar.style.width = '100%';
+        setTimeout(() => progressWrap.classList.add('hidden'), 600);
+        if (xhr.status === 200) {
+          const uploaded = JSON.parse(xhr.responseText);
+          showMsg('uploadMsg', `${uploaded.length} file(s) uploaded successfully.`, 'success');
+          loadFiles();
+        } else {
+          try {
+            const err = JSON.parse(xhr.responseText);
+            showMsg('uploadMsg', err.error || 'Upload failed.');
+          } catch {
+            showMsg('uploadMsg', 'Upload failed.');
+          }
+        }
+        document.getElementById('fileInput').value = '';
+      };
+      xhr.onerror = () => {
+        progressWrap.classList.add('hidden');
+        showMsg('uploadMsg', 'Network error during upload.');
+      };
+      xhr.send(formData);
+    } catch (e) {
+      progressWrap.classList.add('hidden');
+      showMsg('uploadMsg', 'Upload error: ' + e.message);
+    }
+  }
+
+  // ── File actions ────────────────────────────────────────────────────────────
+  function downloadFile(id) {
+    window.location.href = `/api/files/${id}/download`;
+  }
+
+  async function deleteFile(id, btn) {
+    if (!confirm('Delete this file?')) return;
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/api/files/${id}`, {
+        method: 'DELETE',
+        headers: csrfHeaders(),
+      });
+      if (res.ok) { loadFiles(); }
+      else {
+        const data = await res.json();
+        showMsg('fileListMsg', data.error || 'Delete failed.');
+        btn.disabled = false;
+      }
+    } catch (e) {
+      showMsg('fileListMsg', 'Network error.');
+      btn.disabled = false;
+    }
+  }
+
+  // ── On load: fetch CSRF token, then check if already logged in ──────────────
+  (async () => {
+    await fetchCsrfToken();
+    try {
+      const res = await fetch('/api/account/me');
+      if (res.ok) {
+        const data = await res.json();
+        currentAccountId = data.accountId;
+        enterDashboard();
+      }
+    } catch (_) {}
+  })();
+</script>
+</body>
+</html>
